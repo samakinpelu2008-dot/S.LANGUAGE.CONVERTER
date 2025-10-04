@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>s. Language converter</title>
+  <meta name="description" content="s. Language converter — translate between 60+ languages with Yoruba, Igbo, Hausa and Pidgin prioritized." />
+  <style>
+    :root{
+      --bg1: #0f172a; /* for gradient dark end */
+      --bg2: #0ea5e9; /* blue */
+      --accent: #ef4444; /* red accent */
+      --card: rgba(255,255,255,0.96);
+      --muted: #6b7280;
+      --glass: rgba(255,255,255,0.08);
+      --radius: 14px;
+    }
+    /* Light theme variables will override where needed */
+    .light { --card: #ffffff; --glass: rgba(15,23,42,0.04); --muted: #4b5563; background: linear-gradient(135deg,#e6f0ff,#fff0f0); color: #0b1220; }
+    .dark { --card: rgba(6,8,15,0.8); --glass: rgba(255,255,255,0.03); --muted: #9ca3af; background: linear-gradient(135deg,var(--bg1),var(--bg2)); color: #fff; }
+
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;}
+    body{display:flex;align-items:center;justify-content:center;padding:30px;transition:background 300ms ease;}
+    .app {
+      width:100%;
+      max-width:980px;
+      border-radius:18px;
+      padding:20px;
+      box-sizing:border-box;
+      backdrop-filter: blur(6px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.7));
+      box-shadow: 0 10px 40px rgba(2,6,23,0.35);
+    }
+    .dark .app{ background: linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.18)); box-shadow: 0 6px 30px rgba(0,0,0,0.6); }
+
+    header { display:flex; align-items:center; gap:12px; justify-content:space-between; margin-bottom:14px;}
+    .brand { display:flex; align-items:center; gap:12px; }
+    .logo {
+      height:56px; width:56px; border-radius:12px;
+      background: linear-gradient(135deg,var(--bg2),var(--accent));
+      display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:22px;
+      box-shadow: 0 6px 18px rgba(14,165,233,0.18);
+    }
+    h1 { margin:0; font-size:20px; letter-spacing:0.2px;}
+    .subtitle { font-size:12px; color:var(--muted); margin-top:2px; }
+
+    .controls { display:flex; gap:8px; align-items:center; }
+    .btn {
+      background:transparent;border:1px solid rgba(0,0,0,0.06);padding:8px 12px;border-radius:10px;cursor:pointer;
+      font-weight:600;
+    }
+    .dark .btn { border:1px solid rgba(255,255,255,0.06); }
+    .toggle {
+      display:flex; gap:6px; align-items:center; background:var(--glass); padding:6px;border-radius:12px;
+    }
+
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+    @media (max-width:880px){ .grid { grid-template-columns: 1fr; } .sidebar-ad{display:none;} }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+    }
+    .dark .card { box-shadow: none; }
+
+    textarea {
+      width:100%; min-height:140px; padding:12px;border-radius:10px;border:1px solid rgba(0,0,0,0.06); resize:vertical;
+      font-size:15px; box-sizing:border-box; background:transparent;
+    }
+    .dark textarea { border:1px solid rgba(255,255,255,0.05); color:inherit; }
+
+    .row { display:flex; gap:8px; align-items:center; }
+
+    .lang-select {
+      flex:1; display:flex; align-items:center; gap:8px; background:var(--glass); padding:8px;border-radius:10px; cursor:pointer;
+    }
+    .lang-flag { font-size:20px; width:34px; text-align:center; }
+    .lang-label { font-weight:700; font-size:14px; }
+    .lang-code { color:var(--muted); font-size:12px; }
+
+    .icon-btn { background:transparent;border:none;padding:8px;border-radius:10px; cursor:pointer; }
+    .small { padding:6px 10px; border-radius:8px; }
+
+    .actions { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+    .result-area { margin-top:8px; }
+
+    .history-list { max-height:220px; overflow:auto; padding:6px; display:flex; flex-direction:column; gap:8px; }
+    .history-item { padding:8px;border-radius:8px;background:rgba(0,0,0,0.02); display:flex; justify-content:space-between; gap:8px; }
+    .dark .history-item { background: rgba(255,255,255,0.02); }
+
+    .spinner { display:inline-block;width:18px;height:18px;border-radius:50%; border:3px solid rgba(0,0,0,0.1); border-top-color:var(--accent); animation:spin 1s linear infinite; }
+    @keyframes spin{ to { transform:rotate(360deg) } }
+
+    /* Search dropdown list */
+    .lang-dropdown { position:relative; }
+    .lang-list {
+      position:absolute; z-index:60; left:0; right:0; top:52px; max-height:260px; overflow:auto; background:var(--card);
+      border-radius:10px; padding:8px; box-shadow:0 8px 30px rgba(2,6,23,0.12);
+    }
+    .lang-item { padding:8px; border-radius:8px; display:flex; gap:8px; align-items:center; cursor:pointer; }
+    .lang-item:hover{ background:rgba(0,0,0,0.04); }
+    .search-input { width:100%; padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06); margin-bottom:6px; }
+
+    /* ad placeholders */
+    .ad-slot { border-radius:10px; border:1px dashed rgba(0,0,0,0.08); padding:8px; text-align:center; min-height:60px; display:flex; align-items:center; justify-content:center; color:var(--muted); }
+    .dark .ad-slot { border-color: rgba(255,255,255,0.06); }
+
+    .sidebar-ad { display:flex; flex-direction:column; gap:10px; }
+    .bottom-row { margin-top:12px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
+
+    footer { margin-top:12px; font-size:12px; color:var(--muted); text-align:center; }
+
+  </style>
+</head>
+<body class="dark"> <!-- default: dark -->
+  <div class="app">
+    <header>
+      <div class="brand">
+        <div class="logo">s.</div>
+        <div>
+          <h1>s. Language converter</h1>
+          <div class="subtitle">Translate 60+ languages — Yoruba, Igbo, Hausa & Pidgin prioritized</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="toggle" title="Toggle theme">
+          <button id="themeToggle" class="btn small">Light</button>
+        </div>
+        <button id="historyBtn" class="btn small">History</button>
+        <button id="clearAll" class="btn small">Clear</button>
+      </div>
+    </header>
+
+    <main class="grid">
+      <!-- left / main -->
+      <section class="card" aria-label="translator">
+        <!-- top ad placeholder (disabled by request; we included bottom & others) -->
+        <div style="margin-bottom:10px; display:none;">
+          <!-- Top banner placeholder (kept hidden; you chose bottom/popup/sidebar) -->
+          <div class="ad-slot" id="adTop">Top Ad placeholder — (not enabled)</div>
+        </div>
+
+        <div class="row" style="gap:12px; margin-bottom:8px;">
+          <div class="lang-dropdown" style="flex:1;">
+            <div class="lang-select" id="fromSelect" tabindex="0" aria-haspopup="listbox">
+              <div class="lang-flag" id="fromFlag">🇳🇬</div>
+              <div>
+                <div class="lang-label" id="fromLabel">Yoruba</div>
+                <div class="lang-code" id="fromCode">yo</div>
+              </div>
+            </div>
+            <div class="lang-list" id="fromList" style="display:none;">
+              <input placeholder="Search language..." id="fromSearch" class="search-input" />
+              <div id="fromItems"></div>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:8px; justify-content:center; align-items:center;">
+            <button class="icon-btn" id="swapBtn" title="Swap languages">🔁</button>
+            <button class="icon-btn" id="detectBtn" title="Auto detect">🧭</button>
+          </div>
+
+          <div class="lang-dropdown" style="flex:1;">
+            <div class="lang-select" id="toSelect" tabindex="0" aria-haspopup="listbox">
+              <div class="lang-flag" id="toFlag">🇬🇧</div>
+              <div>
+                <div class="lang-label" id="toLabel">English</div>
+                <div class="lang-code" id="toCode">en</div>
+              </div>
+            </div>
+            <div class="lang-list" id="toList" style="display:none;">
+              <input placeholder="Search language..." id="toSearch" class="search-input" />
+              <div id="toItems"></div>
+            </div>
+          </div>
+        </div>
+
+        <textarea id="inputText" placeholder="Enter text to translate..."></textarea>
+
+        <div class="actions">
+          <button id="voiceIn" class="btn small">🎙️ Voice</button>
+          <button id="translateBtn" class="btn small">Translate</button>
+          <button id="copyInput" class="btn small">Copy Input</button>
+          <button id="clearInput" class="btn small">Clear</button>
+        </div>
+
+        <div class="result-area" style="margin-top:10px;">
+          <div style="display:flex; align-items:center; justify-content:space-between;">
+            <h3 style="margin:0">Result</h3>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button id="ttsBtn" class="btn small">🔊 Speak</button>
+              <button id="copyResult" class="btn small">Copy</button>
+              <div id="status" style="font-size:13px;color:var(--muted)"></div>
+            </div>
+          </div>
+          <textarea id="outputText" readonly placeholder="Translation will appear here..."></textarea>
+        </div>
+
+        <div class="bottom-row">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button id="saveBtn" class="btn">Save to History</button>
+            <button id="downloadHistory" class="btn">Export CSV</button>
+          </div>
+
+          <!-- bottom ad placeholder (ENABLED) -->
+          <div id="adBottom" class="ad-slot" style="min-width:320px; max-width:468px;">
+            <!-- 🔸 Paste your Adsterra BOTTOM banner script here -->
+            <!-- Example:
+            <script type="text/javascript" src="//plYOURID.highcpmrevenuegate.com/YOURCODE.js"></script>
+            -->
+            Bottom Ad placeholder — paste Adsterra script here
+          </div>
+        </div>
+
+        <footer>Built for Nigeria — Yoruba, Igbo, Hausa & Pidgin included • Deploy to GitHub Pages</footer>
+      </section>
+
+      <!-- right / sidebar -->
+      <aside class="card sidebar-ad">
+        <div class="ad-slot" id="adSidebar">
+          <!-- 🔸 Paste your Adsterra SIDEBAR script here (desktop only) -->
+          Sidebar Ad placeholder — paste Adsterra script here
+        </div>
+
+        <div class="card" style="padding:12px;">
+          <h4 style="margin:0 0 8px 0">Recent translations</h4>
+          <div class="history-list" id="historyList">
+            <!-- filled by JS -->
+          </div>
+        </div>
+
+        <div class="card" style="padding:12px;">
+          <h4 style="margin:0 0 8px 0">Settings</h4>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <label><input type="checkbox" id="enablePWA" /> Enable PWA features (manual)</label>
+            <label><input type="checkbox" id="autoSave" checked /> Auto-save translations</label>
+            <label>Voice pitch: <input type="range" id="ttsPitch" min="0.5" max="2" step="0.1" value="1" /></label>
+          </div>
+        </div>
+
+        <div class="ad-slot" style="padding:6px;font-size:12px;color:var(--muted);">
+          <strong>Popup Ad (disabled)</strong><br/>
+          <!-- POPUP placeholder (disabled by default) -->
+          <!-- 🔸 Paste your Adsterra POPUP script here and enable in code if you want it active -->
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Optional popup ad script (kept commented & disabled).
+       To enable later, paste your Adsterra popup code and call showPopupAd().
+  -->
+  <!--
+  <div id="popupAdRoot" style="display:none;">
+    <div class="ad-slot">Popup ad placeholder</div>
+  </div>
+  -->
+
+  <script>
+  /**************************************************************************
+   * s. Language converter - single file app
+   * Features:
+   * - 60+ languages (Nigerian prioritized)
+   * - Searchable language pickers (custom)
+   * - Translate via LibreTranslate primary, fallback to MyMemory
+   * - Pidgin custom dictionary fallback
+   * - Voice input (SpeechRecognition) + Text-to-speech (speechSynthesis)
+   * - History (localStorage), export CSV
+   * - Adsterra placeholders: bottom, sidebar, popup (commented)
+   **************************************************************************/
+
+  // ---------- LANGUAGE LIST ----------
+  // Each language entry: {code, name, flag}
+  const LANGUAGES = [
+    // Prioritized Nigerian languages
+    {code:'yo', name:'Yoruba', flag:'🇳🇬'},
+    {code:'ig', name:'Igbo', flag:'🇳🇬'},
+    {code:'ha', name:'Hausa (Awusa)', flag:'🇳🇬'},
+    {code:'pcm', name:'Nigerian Pidgin', flag:'🇳🇬'}, // custom
+
+    // Common global languages
+    {code:'en', name:'English', flag:'🇬🇧'},
+    {code:'fr', name:'French', flag:'🇫🇷'},
+    {code:'es', name:'Spanish', flag:'🇪🇸'},
+    {code:'pt', name:'Portuguese', flag:'🇵🇹'},
+    {code:'de', name:'German', flag:'🇩🇪'},
+    {code:'it', name:'Italian', flag:'🇮🇹'},
+    {code:'nl', name:'Dutch', flag:'🇳🇱'},
+    {code:'ru', name:'Russian', flag:'🇷🇺'},
+    {code:'pl', name:'Polish', flag:'🇵🇱'},
+    {code:'el', name:'Greek', flag:'🇬🇷'},
+    {code:'sv', name:'Swedish', flag:'🇸🇪'},
+    {code:'da', name:'Danish', flag:'🇩🇰'},
+    {code:'fi', name:'Finnish', flag:'🇫🇮'},
+    {code:'no', name:'Norwegian', flag:'🇳🇴'},
+    {code:'cs', name:'Czech', flag:'🇨🇿'},
+    {code:'hu', name:'Hungarian', flag:'🇭🇺'},
+    {code:'ro', name:'Romanian', flag:'🇷🇴'},
+    {code:'bg', name:'Bulgarian', flag:'🇧🇬'},
+    {code:'hr', name:'Croatian', flag:'🇭🇷'},
+    {code:'uk', name:'Ukrainian', flag:'🇺🇦'},
+
+    // Asia
+    {code:'zh', name:'Chinese (Simplified)', flag:'🇨🇳'},
+    {code:'zh-TW', name:'Chinese (Traditional)', flag:'🇹🇼'},
+    {code:'ja', name:'Japanese', flag:'🇯🇵'},
+    {code:'ko', name:'Korean', flag:'🇰🇷'},
+    {code:'ar', name:'Arabic', flag:'🇸🇦'},
+    {code:'hi', name:'Hindi', flag:'🇮🇳'},
+    {code:'ur', name:'Urdu', flag:'🇵🇰'},
+    {code:'bn', name:'Bengali', flag:'🇧🇩'},
+    {code:'ta', name:'Tamil', flag:'🇮🇳'},
+    {code:'te', name:'Telugu', flag:'🇮🇳'},
+    {code:'id', name:'Indonesian', flag:'🇮🇩'},
+    {code:'ms', name:'Malay', flag:'🇲🇾'},
+    {code:'tl', name:'Filipino / Tagalog', flag:'🇵🇭'},
+    {code:'th', name:'Thai', flag:'🇹🇭'},
+    {code:'vi', name:'Vietnamese', flag:'🇻🇳'},
+    {code:'tr', name:'Turkish', flag:'🇹🇷'},
+    {code:'fa', name:'Persian / Farsi', flag:'🇮🇷'},
+
+    // Americas & others
+    {code:'ht', name:'Haitian Creole', flag:'🇭🇹'},
+    {code:'gn', name:'Guarani', flag:'🇵🇾'},
+    {code:'mi', name:'Maori', flag:'🇳🇿'},
+    {code:'sm', name:'Samoan', flag:'🇼🇸'},
+    {code:'haw', name:'Hawaiian', flag:'🇭🇺'},
+    {code:'sw', name:'Swahili', flag:'🇰🇪'},
+    {code:'am', name:'Amharic', flag:'🇪🇹'},
+    {code:'so', name:'Somali', flag:'🇸🇴'},
+    {code:'af', name:'Afrikaans', flag:'🇿🇦'},
+    {code:'zu', name:'Zulu', flag:'🇿🇦'},
+    {code:'sn', name:'Shona', flag:'🇿🇼'},
+    {code:'xh', name:'Xhosa', flag:'🇿🇦'},
+    {code:'la', name:'Latin', flag:'🏛️'},
+    {code:'eo', name:'Esperanto', flag:'🌐'}
+  ];
+
+  // Quick map for display by code
+  const LANG_MAP = Object.fromEntries(LANGUAGES.map(l => [l.code, l]));
+
+  // ---------- UI refs ----------
+  const fromSelect = document.getElementById('fromSelect');
+  const toSelect = document.getElementById('toSelect');
+  const fromList = document.getElementById('fromList');
+  const toList = document.getElementById('toList');
+  const fromItems = document.getElementById('fromItems');
+  const toItems = document.getElementById('toItems');
+  const fromSearch = document.getElementById('fromSearch');
+  const toSearch = document.getElementById('toSearch');
+  const fromFlag = document.getElementById('fromFlag');
+  const toFlag = document.getElementById('toFlag');
+  const fromLabel = document.getElementById('fromLabel');
+  const toLabel = document.getElementById('toLabel');
+  const fromCode = document.getElementById('fromCode');
+  const toCode = document.getElementById('toCode');
+
+  const inputText = document.getElementById('inputText');
+  const outputText = document.getElementById('outputText');
+  const translateBtn = document.getElementById('translateBtn');
+  const translateStatus = document.getElementById('status');
+  const copyResult = document.getElementById('copyResult');
+  const copyInput = document.getElementById('copyInput');
+  const clearInput = document.getElementById('clearInput');
+  const swapBtn = document.getElementById('swapBtn');
+  const detectBtn = document.getElementById('detectBtn');
+  const ttsBtn = document.getElementById('ttsBtn');
+  const voiceIn = document.getElementById('voiceIn');
+  const historyBtn = document.getElementById('historyBtn');
+  const historyList = document.getElementById('historyList');
+  const saveBtn = document.getElementById('saveBtn');
+  const downloadHistory = document.getElementById('downloadHistory');
+  const autoSaveCheckbox = document.getElementById('autoSave');
+  const themeToggle = document.getElementById('themeToggle');
+
+  // state
+  let fromLang = 'yo';
+  let toLang = 'en';
+  let isTranslating = false;
+  let recognition = null;
+  let autoSave = true;
+  let ttsPitch = 1.0;
+
+  // initialize UI values
+  function setFrom(lang){
+    fromLang = lang;
+    const l = LANG_MAP[lang] || {flag:'🏳️', name:lang, code:lang};
+    fromFlag.textContent = l.flag;
+    fromLabel.textContent = l.name;
+    fromCode.textContent = l.code;
+  }
+  function setTo(lang){
+    toLang = lang;
+    const l = LANG_MAP[lang] || {flag:'🏳️', name:lang, code:lang};
+    toFlag.textContent = l.flag;
+    toLabel.textContent = l.name;
+    toCode.textContent = l.code;
+  }
+
+  // populate language lists
+  function makeLangItem(l, clickHandler){
+    const d = document.createElement('div');
+    d.className = 'lang-item';
+    d.innerHTML = `<div class="lang-flag">${l.flag}</div><div style="flex:1"><div style="font-weight:700">${l.name}</div><div style="font-size:12px;color:var(--muted)">${l.code}</div></div>`;
+    d.addEventListener('click', ()=> clickHandler(l.code));
+    return d;
+  }
+
+  function populateLists(){
+    fromItems.innerHTML = '';
+    toItems.innerHTML = '';
+    LANGUAGES.forEach(l=>{
+      fromItems.appendChild(makeLangItem(l, code=>{
+        setFrom(code); fromList.style.display='none';
+      }));
+      toItems.appendChild(makeLangItem(l, code=>{
+        setTo(code); toList.style.display='none';
+      }));
+    });
+  }
+
+  populateLists();
+  setFrom(fromLang);
+  setTo(toLang);
+
+  // search filter
+  function filterList(inputEl, containerEl){
+    const q = inputEl.value.trim().toLowerCase();
+    Array.from(containerEl.children).forEach(item=>{
+      const txt = item.textContent.toLowerCase();
+      item.style.display = txt.includes(q) ? '' : 'none';
+    });
+  }
+  fromSearch.addEventListener('input', ()=> filterList(fromSearch, fromItems));
+  toSearch.addEventListener('input', ()=> filterList(toSearch, toItems));
+
+  // open/close picks
+  fromSelect.addEventListener('click', ()=> {
+    fromList.style.display = fromList.style.display === 'block' ? 'none' : 'block';
+    toList.style.display = 'none';
+    fromSearch.value=''; filterList(fromSearch, fromItems);
+    fromSearch.focus();
+  });
+  toSelect.addEventListener('click', ()=> {
+    toList.style.display = toList.style.display === 'block' ? 'none' : 'block';
+    fromList.style.display = 'none';
+    toSearch.value=''; filterList(toSearch, toItems);
+    toSearch.focus();
+  });
+  document.addEventListener('click', (e)=> {
+    if(!fromSelect.contains(e.target) && !fromList.contains(e.target)) fromList.style.display='none';
+    if(!toSelect.contains(e.target) && !toList.contains(e.target)) toList.style.display='none';
+  });
+
+  // swap
+  swapBtn.addEventListener('click', ()=>{
+    const a = fromLa
